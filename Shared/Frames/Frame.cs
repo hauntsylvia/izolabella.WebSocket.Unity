@@ -26,15 +26,13 @@ namespace izolabella.WebSocket.Unity.Shared.Frames
         public int SizeBytes { get; }
 
         /// <summary>
-        /// Creates a <see cref="Frame"/> from the byte equivalent. Set <paramref name="Skip4"/> to true
-        /// if <paramref name="Data"/>'s first four bytes are the content size.
+        /// Creates a <see cref="Frame"/> from the byte equivalent.
         /// </summary>
         /// <param name="Data"></param>
-        /// <param name="Skip4"></param>
         /// <returns></returns>
-        public static Frame? FromBytes(byte[] Data, bool Skip4 = true)
+        public static Frame? FromBytes(byte[] Data)
         {
-            byte[] JSONBytes = Skip4 ? Data.Skip(4).ToArray() : Data;
+            byte[] JSONBytes = Data.Skip(4).ToArray();
             string JSON = Encoding.UTF8.GetString(JSONBytes);
             HandlerRequestModel? F = JsonConvert.DeserializeObject<HandlerRequestModel>(JSON);
             return F != null ? (new(F)) : null;

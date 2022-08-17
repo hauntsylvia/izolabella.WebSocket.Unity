@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using izolabella.WebSocket.Unity.Shared;
+using izolabella.WebSocket.Unity.Shared.RequestHelpers;
 using izolabella.WebSocket.Unity.Shared.Requisites;
 
 #nullable enable
@@ -11,8 +12,6 @@ namespace izolabella.WebSocket.Unity.Receiver
 {
     public class Server
     {
-        const int maxWillingReadBytes = 5000000;
-
         public Server(int Port, bool OverrideReceiverLookup = false)
         {
             this.AcceptedListenerRequests = new();
@@ -23,21 +22,19 @@ namespace izolabella.WebSocket.Unity.Receiver
             }
         }
 
-        public delegate Task<IEnumerable<Requisite>> OnRequisiteRequestHandler(TcpClient InnerClient);
-        public event OnRequisiteRequestHandler? OnRequisiteRequest;
+        public delegate Task OnSocketConnectedH(Middle M);
+        public event OnSocketConnectedH? OnSocketConnected;
 
         public List<RequestHandler> RequestHandlers { get; } = new();
 
         public TcpListener Listener { get; }
 
         public List<Task> AcceptedListenerRequests { get; }
-
-        public async Task ForgetAndFireAsync(TcpClient Client)
+        public Task ForgetAndFireAsync(Socket Client)
         {
-            Client.ReceiveBufferSize = maxWillingReadBytes;
-            Client.SendBufferSize = maxWillingReadBytes;
-            SocketClient SClient = new(Client, this.RequestHandlers, await (this.OnRequisiteRequest?.Invoke(Client) ?? Task.FromResult<IEnumerable<Requisite>>(Array.Empty<Requisite>())));
-            await SClient.ProcessRequests();
+            Middle SClient = new(Client, string.Empty/*, this.RequestHandlers, await (this.OnRequisiteRequest?.Invoke(Client) ?? Task.FromResult<IEnumerable<Requisite>>(Array.Empty<Requisite>()))*/);
+            this.OnSocketConnected?.Invoke(SClient);
+            return Task.CompletedTask;
         }
 
         public Task StartListener()
@@ -47,7 +44,7 @@ namespace izolabella.WebSocket.Unity.Receiver
             {
                 while(true)
                 {
-                    TcpClient ClientTask = await this.Listener.AcceptTcpClientAsync();
+                    Socket ClientTask = await this.Listener.AcceptSocketAsync();
                     new Task(() => this.AcceptedListenerRequests.Add(this.ForgetAndFireAsync(ClientTask))).Start();
                 }
             }).Start();
