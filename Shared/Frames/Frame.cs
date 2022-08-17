@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using UnityEngine;
 
 namespace izolabella.WebSocket.Unity.Shared.Frames
 {
@@ -47,13 +46,11 @@ namespace izolabella.WebSocket.Unity.Shared.Frames
         {
             byte[] Data = new byte[Frame.SizeBytes];
             byte[] IntBytes = BitConverter.GetBytes(Frame.SizeBytes);
-            Debug.Log(Frame.SizeBytes + " - full frame size");
             for (int Index = 0; Index < IntBytes.Length; Index++)
             {
                 Data[Index] = IntBytes[Index];
             }
             string JSONDataString = JsonConvert.SerializeObject(Frame.Model);
-            Debug.Log(JSONDataString);
             byte[] JSONData = Encoding.UTF8.GetBytes(JSONDataString);
             for (int Index = IntBytes.Length; Index < Data.Length; Index++)
             {

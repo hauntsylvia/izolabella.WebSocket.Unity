@@ -9,7 +9,7 @@ using izolabella.WebSocket.Unity.Receiver;
 using izolabella.WebSocket.Unity.Sender;
 using izolabella.WebSocket.Unity.Shared.Frames;
 using izolabella.WebSocket.Unity.Shared.UserAuth;
-using UnityEngine;
+using static izolabella.WebSocket.Unity.Shared.RequestHelpers.Middle;
 
 #nullable enable
 
@@ -44,6 +44,9 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
 
         public delegate Task<IUser?> UserNeedsAuthH(HandlerRequestModel Model);
         public event UserNeedsAuthH? UserNeedsAuth;
+
+        public delegate void DebugMessageH(string M);
+        public event DebugMessageH? DebugMessage;
 
         public Socket Sock { get; }
 
@@ -92,11 +95,13 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
                             byte[] B = new byte[4];
                             NetStr.Read(B, 0, B.Length);
                             int DataSize = BitConverter.ToInt32(B, 0) - 4;
+                            this.DebugMessage?.Invoke($"Received frame, self-size report: {DataSize} bytes");
                             if (this.Sock.Available >= DataSize)
                             {
-                                byte[] Data = B.Concat(new byte[DataSize]).ToArray();
+                                byte[] Data = new byte[DataSize];
                                 NetStr.Read(Data, 0, Data.Length);
-                                Frame? F = Frame.FromBytes(Data);
+                                byte[] BData = B.Concat(Data).ToArray();
+                                Frame? F = Frame.FromBytes(BData);
                                 if (F is not null and Frame Fa)
                                 {
                                     this.OnRequestReceived?.Invoke(Fa.Model);
@@ -110,7 +115,11 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
                                         }
                                         if((Target.MustBeAuthorized && A != null) || !Target.MustBeAuthorized)
                                         {
-                                            object SendBack = await Target.HandleRequest(Fa.Model);
+                                            object? SendBack = await Target.HandleRequest(Fa.Model, A);
+                                            if(SendBack != null && Target.CallbackAlias != null)
+                                            {
+                                                await this.SendRequestAsync(new(Target.CallbackAlias, SendBack, this.Token));
+                                            }
                                         }
                                     }
                                 }

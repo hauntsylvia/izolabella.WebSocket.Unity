@@ -7,7 +7,6 @@ using izolabella.WebSocket.Unity.Shared;
 using izolabella.WebSocket.Unity.Shared.Frames;
 using izolabella.WebSocket.Unity.Shared.RequestHelpers;
 using Newtonsoft.Json;
-using UnityEngine;
 
 #nullable enable
 
