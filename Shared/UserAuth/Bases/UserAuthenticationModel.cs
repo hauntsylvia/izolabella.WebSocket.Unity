@@ -15,6 +15,6 @@ namespace izolabella.WebSocket.Unity.Shared.UserAuth
 
         }
 
-        public abstract AUser? AuthUser(HandlerRequestModel Model);
+        public abstract Task<IUser?> AuthUserAsync(HandlerRequestModel Model);
     }
 }

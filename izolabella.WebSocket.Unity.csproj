@@ -60,8 +60,8 @@
     <Compile Include="Shared\RequestHelpers\Middle.cs" />
     <Compile Include="Shared\Requisites\Base\Requisite.cs" />
     <Compile Include="Shared\Requisites\Implementations\HeartbeatRequisite.cs" />
-    <Compile Include="Shared\UserAuth\AUser.cs" />
-    <Compile Include="Shared\UserAuth\UserAuthenticationModel.cs" />
+    <Compile Include="Shared\UserAuth\Bases\IUser.cs" />
+    <Compile Include="Shared\UserAuth\Bases\UserAuthenticationModel.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

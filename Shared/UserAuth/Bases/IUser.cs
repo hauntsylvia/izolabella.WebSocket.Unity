@@ -6,11 +6,7 @@ using System.Threading.Tasks;
 
 namespace izolabella.WebSocket.Unity.Shared.UserAuth
 {
-    public class AUser
+    public interface IUser
     {
-        public AUser(string SecureStr)
-        {
-
-        }
     }
 }

@@ -20,7 +20,7 @@ namespace izolabella.WebSocket.Unity.Sender
             this.Host = Host;
             this.Port = Port;
             Socket Sock = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            this.Middle = new(Sock, Host, Port, Token);
+            this.Middle = new(Sock, Host, Port, Token, false);
         }
 
         public string Host { get; }

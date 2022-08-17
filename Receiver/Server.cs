@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using izolabella.WebSocket.Unity.Shared;
 using izolabella.WebSocket.Unity.Shared.RequestHelpers;
 using izolabella.WebSocket.Unity.Shared.Requisites;
+using izolabella.WebSocket.Unity.Shared.UserAuth;
 
 #nullable enable
 
@@ -12,7 +13,7 @@ namespace izolabella.WebSocket.Unity.Receiver
 {
     public class Server
     {
-        public Server(int Port, bool OverrideReceiverLookup = false)
+        public Server(int Port, UserAuthenticationModel UserAuthModel, bool OverrideReceiverLookup = false)
         {
             this.AcceptedListenerRequests = new();
             this.Listener = new(System.Net.IPAddress.Any, Port);
@@ -20,6 +21,8 @@ namespace izolabella.WebSocket.Unity.Receiver
             {
                 this.RequestHandlers = BaseImpUtil.GetItems<RequestHandler>();
             }
+
+            this.UserAuthModel = UserAuthModel;
         }
 
         public delegate Task OnSocketConnectedH(Middle M);
@@ -30,11 +33,20 @@ namespace izolabella.WebSocket.Unity.Receiver
         public TcpListener Listener { get; }
 
         public List<Task> AcceptedListenerRequests { get; }
+
+        public UserAuthenticationModel UserAuthModel { get; }
+
         public Task ForgetAndFireAsync(Socket Client)
         {
-            Middle SClient = new(Client, string.Empty/*, this.RequestHandlers, await (this.OnRequisiteRequest?.Invoke(Client) ?? Task.FromResult<IEnumerable<Requisite>>(Array.Empty<Requisite>()))*/);
+            Middle SClient = new(Client, string.Empty, true/*, this.RequestHandlers, await (this.OnRequisiteRequest?.Invoke(Client) ?? Task.FromResult<IEnumerable<Requisite>>(Array.Empty<Requisite>()))*/);
+            SClient.UserNeedsAuth += this.AttemptToAuthUser;
             this.OnSocketConnected?.Invoke(SClient);
             return Task.CompletedTask;
+        }
+
+        private Task<IUser?> AttemptToAuthUser(HandlerRequestModel Model)
+        {
+            return this.UserAuthModel.AuthUserAsync(Model);
         }
 
         public Task StartListener()

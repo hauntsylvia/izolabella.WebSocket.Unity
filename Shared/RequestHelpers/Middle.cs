@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using izolabella.WebSocket.Unity.Receiver;
 using izolabella.WebSocket.Unity.Sender;
 using izolabella.WebSocket.Unity.Shared.Frames;
+using izolabella.WebSocket.Unity.Shared.UserAuth;
 using UnityEngine;
 
 #nullable enable
@@ -16,18 +17,20 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
 {
     public class Middle
     {
-        public Middle(Socket Sock, string? Token)
+        public Middle(Socket Sock, string? Token, bool IsServer)
         {
             this.Sock = Sock;
             this.Token = Token;
+            this.IsServer = IsServer;
             this.Handlers = BaseImpUtil.GetItems<RequestHandler>(AppDomain.CurrentDomain.GetAssemblies());
             this.StartProcessingIncoming();
         }
 
-        public Middle(Socket Sock, string Hostname, int Port, string? Token)
+        public Middle(Socket Sock, string Hostname, int Port, string? Token, bool IsServer)
         {
             this.Sock = Sock;
             this.Token = Token;
+            this.IsServer = IsServer;
             this.Sock.Connect(Hostname, Port);
             this.Handlers = BaseImpUtil.GetItems<RequestHandler>(AppDomain.CurrentDomain.GetAssemblies());
             this.StartProcessingIncoming();
@@ -39,9 +42,14 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
         public delegate Task SocketDisconnectedH();
         public event SocketDisconnectedH? OnSocketDisconnected;
 
+        public delegate Task<IUser?> UserNeedsAuthH(HandlerRequestModel Model);
+        public event UserNeedsAuthH? UserNeedsAuth;
+
         public Socket Sock { get; }
 
         public string? Token { get; }
+
+        public bool IsServer { get; }
 
         public List<RequestHandler> Handlers { get; }
 
@@ -95,7 +103,15 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
                                     RequestHandler? Target = this.Handlers.FirstOrDefault(H => H.Alias.ToLower() == Fa.Model.Alias.ToLower());
                                     if (Target != null)
                                     {
-                                        object SendBack = await Target.HandleRequest(Fa.Model);
+                                        IUser? A = null;
+                                        if(Target.MustBeAuthorized && this.IsServer && this.UserNeedsAuth != null)
+                                        {
+                                            A = await this.UserNeedsAuth.Invoke(Fa.Model);
+                                        }
+                                        if((Target.MustBeAuthorized && A != null) || !Target.MustBeAuthorized)
+                                        {
+                                            object SendBack = await Target.HandleRequest(Fa.Model);
+                                        }
                                     }
                                 }
                             }

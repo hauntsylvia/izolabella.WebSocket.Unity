@@ -12,6 +12,8 @@ namespace izolabella.WebSocket.Unity.Shared
 
         public abstract string Alias { get; }
 
+        public abstract bool MustBeAuthorized { get; }
+
         public Task<object> HandleRequest(HandlerRequestModel SentObject)
         {
             this.LastReceivedRequest = DateTime.UtcNow;
