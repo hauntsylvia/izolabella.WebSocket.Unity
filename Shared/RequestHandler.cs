@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
+using AttritionalFear.Util;
+using izolabella.WebSocket.Unity.Shared.RequestHelpers;
 using izolabella.WebSocket.Unity.Shared.UserAuth;
 
 #nullable enable
@@ -19,12 +21,17 @@ namespace izolabella.WebSocket.Unity.Shared
 
         public abstract bool MustBeAuthorized { get; }
 
-        public Task<object?> HandleRequest(HandlerRequestModel SentObject, IUser? User)
+        public virtual RateLimiter Limiter { get; } = new(TimeSpan.Zero);
+
+        public delegate void OnThisRequestH(object Entity);
+        public virtual event OnThisRequestH? OnCustomCallback;
+
+        public Task<object?> HandleRequest(HandlerRequestModel SentObject, Middle Caller, IUser? User)
         {
             this.LastReceivedRequest = DateTime.UtcNow;
-            return this.ProtectedHandleRequest(SentObject, User);
+            return this.ProtectedHandleRequest(SentObject, Caller, User);
         }
 
-        protected abstract Task<object?> ProtectedHandleRequest(HandlerRequestModel SentObject, IUser? User);
+        protected abstract Task<object?> ProtectedHandleRequest(HandlerRequestModel SentObject, Middle Caller, IUser? User);
     }
 }

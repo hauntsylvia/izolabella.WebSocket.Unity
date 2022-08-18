@@ -28,6 +28,9 @@ namespace izolabella.WebSocket.Unity.Receiver
         public delegate Task OnSocketConnectedH(Middle M);
         public event OnSocketConnectedH? OnSocketConnected;
 
+        public delegate Task OnUserAuthFailureH(Middle M);
+        public event OnUserAuthFailureH? OnUserAuthFailure;
+
         public List<RequestHandler> RequestHandlers { get; } = new();
 
         public TcpListener Listener { get; }
@@ -44,9 +47,14 @@ namespace izolabella.WebSocket.Unity.Receiver
             return Task.CompletedTask;
         }
 
-        private Task<IUser?> AttemptToAuthUser(HandlerRequestModel Model)
+        private async Task<IUser?> AttemptToAuthUser(HandlerRequestModel Model, Middle Instance)
         {
-            return this.UserAuthModel.AuthUserAsync(Model);
+            IUser? U = await this.UserAuthModel.AuthUserAsync(Model);
+            if(U == null)
+            {
+                this.OnUserAuthFailure?.Invoke(Instance);
+            }
+            return U;
         }
 
         public Task StartListener()

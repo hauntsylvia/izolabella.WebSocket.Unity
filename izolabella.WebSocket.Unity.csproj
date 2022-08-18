@@ -59,5 +59,11 @@
     <Compile Include="Shared\UserAuth\Bases\IUser.cs" />
     <Compile Include="Shared\UserAuth\Bases\UserAuthenticationModel.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\source\repos\AttritionalFear.Client\AttritionalFear.Util\AttritionalFear.Util.Unity.csproj">
+      <Project>{B0ECF5E3-AFBF-44C2-9F96-E74775EDAD43}</Project>
+      <Name>AttritionalFear.Util.Unity</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

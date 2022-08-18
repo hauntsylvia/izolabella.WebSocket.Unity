@@ -36,14 +36,17 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
             this.StartProcessingIncoming();
         }
 
-        public delegate Task OnRequestReceivedH(HandlerRequestModel Model);
+        public delegate Task OnRequestReceivedH(HandlerRequestModel Model, Middle Instance);
         public event OnRequestReceivedH? OnRequestReceived;
 
-        public delegate Task SocketDisconnectedH();
+        public delegate Task SocketDisconnectedH(Middle Instance);
         public event SocketDisconnectedH? OnSocketDisconnected;
 
-        public delegate Task<IUser?> UserNeedsAuthH(HandlerRequestModel Model);
+        public delegate Task<IUser?> UserNeedsAuthH(HandlerRequestModel Model, Middle Instance);
         public event UserNeedsAuthH? UserNeedsAuth;
+
+        public delegate Task RateLimitedH(HandlerRequestModel Model, RequestHandler Target, Middle Instance);
+        public event RateLimitedH? RateLimited;
 
         public delegate void DebugMessageH(string M);
         public event DebugMessageH? DebugMessage;
@@ -67,7 +70,7 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
 
                 if (!this.Sock.Connected && this.OnSocketDisconnected != null)
                 {
-                    await this.OnSocketDisconnected.Invoke();
+                    await this.OnSocketDisconnected.Invoke(this);
                 }
                 else
                 {
@@ -104,23 +107,27 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
                                 Frame? F = Frame.FromBytes(BData);
                                 if (F is not null and Frame Fa)
                                 {
-                                    this.OnRequestReceived?.Invoke(Fa.Model);
+                                    this.OnRequestReceived?.Invoke(Fa.Model, this);
                                     RequestHandler? Target = this.Handlers.FirstOrDefault(H => H.Alias.ToLower() == Fa.Model.Alias.ToLower());
-                                    if (Target != null)
+                                    if (Target != null && Target.Limiter.Passes(this.Sock.RemoteEndPoint))
                                     {
                                         IUser? A = null;
                                         if(Target.MustBeAuthorized && this.IsServer && this.UserNeedsAuth != null)
                                         {
-                                            A = await this.UserNeedsAuth.Invoke(Fa.Model);
+                                            A = await this.UserNeedsAuth.Invoke(Fa.Model, this);
                                         }
                                         if((Target.MustBeAuthorized && A != null) || !Target.MustBeAuthorized)
                                         {
-                                            object? SendBack = await Target.HandleRequest(Fa.Model, A);
+                                            object? SendBack = await Target.HandleRequest(Fa.Model, this, A);
                                             if(SendBack != null && Target.CallbackAlias != null)
                                             {
                                                 await this.SendRequestAsync(new(Target.CallbackAlias, SendBack, this.Token));
                                             }
                                         }
+                                    }
+                                    else if(Target != null && !Target.Limiter.Passes(this.Sock.RemoteEndPoint))
+                                    {
+                                        this.RateLimited?.Invoke(Fa.Model, Target, this);
                                     }
                                 }
                             }
@@ -148,6 +155,17 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
                 byte[] FrameBytes = Frame.ToBytes(Fr);
                 NetStr.Write(FrameBytes, 0, FrameBytes.Length);
             }
+        }
+
+        public bool LinkCallbackByType<T>(Action<object> E) where T : RequestHandler
+        {
+            RequestHandler? H = this.Handlers.FirstOrDefault(H => H.GetType() == typeof(T));
+            if(H != null)
+            {
+                H.OnCustomCallback += (A) => E.Invoke(A);
+                return true;
+            }
+            return false;
         }
     }
 }
