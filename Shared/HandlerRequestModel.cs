@@ -9,14 +9,14 @@ namespace izolabella.WebSocket.Unity.Shared
     public class HandlerRequestModel
     {
         [JsonConstructor]
-        private HandlerRequestModel(string Alias, string Entity, string? Token)
+        private HandlerRequestModel(string Alias, string? Entity, string? Token)
         {
             this.Alias = Alias;
             this.Entity = Entity;
             this.Token = Token ?? string.Empty;
         }
 
-        public HandlerRequestModel(string Alias, object Entity, string? Token)
+        public HandlerRequestModel(string Alias, object? Entity, string? Token)
         {
             this.Alias = Alias;
             this.Entity = JsonConvert.SerializeObject(Entity);
@@ -27,7 +27,7 @@ namespace izolabella.WebSocket.Unity.Shared
         public string Alias { get; }
 
         [JsonProperty("e")]
-        private string Entity { get; }
+        private string? Entity { get; }
 
         [JsonProperty("t")]
         public string Token { get; }
@@ -37,10 +37,10 @@ namespace izolabella.WebSocket.Unity.Shared
             try
             {
 #pragma warning disable CS8601 // Possible null reference assignment.
-                Value = JsonConvert.DeserializeObject<T>(this.Entity);
+                Value = this.Entity != null ? JsonConvert.DeserializeObject<T>(this.Entity) : default;
                 return Value != null;
             }
-            catch(Exception Ex)
+            catch (Exception Ex)
             {
                 Console.WriteLine(Ex);
                 Value = default;

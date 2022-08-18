@@ -25,7 +25,7 @@ namespace izolabella.WebSocket.Unity.Shared.Requisites
         {
             this.LastEnsured = DateTime.UtcNow;
             bool Passed = this.ProtectedEnsureValidity();
-            if(!Passed)
+            if (!Passed)
             {
                 this.KillClientAsync();
             }

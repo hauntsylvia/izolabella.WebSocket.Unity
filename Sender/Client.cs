@@ -1,12 +1,5 @@
-﻿using System;
-using System.IO;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
-using izolabella.WebSocket.Unity.Shared;
-using izolabella.WebSocket.Unity.Shared.Frames;
+﻿using System.Net.Sockets;
 using izolabella.WebSocket.Unity.Shared.RequestHelpers;
-using Newtonsoft.Json;
 
 #nullable enable
 

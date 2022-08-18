@@ -2,14 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
-using izolabella.WebSocket.Unity.Receiver;
-using izolabella.WebSocket.Unity.Sender;
 using izolabella.WebSocket.Unity.Shared.Frames;
 using izolabella.WebSocket.Unity.Shared.UserAuth;
-using static izolabella.WebSocket.Unity.Shared.RequestHelpers.Middle;
 
 #nullable enable
 
@@ -53,7 +48,7 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
 
         public Socket Sock { get; }
 
-        public string? Token { get; }
+        public string? Token { get; set; }
 
         public bool IsServer { get; }
 
@@ -111,21 +106,17 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
                                     RequestHandler? Target = this.Handlers.FirstOrDefault(H => H.Alias.ToLower() == Fa.Model.Alias.ToLower());
                                     if (Target != null && Target.Limiter.Passes(this.Sock.RemoteEndPoint))
                                     {
-                                        IUser? A = null;
-                                        if(Target.MustBeAuthorized && this.IsServer && this.UserNeedsAuth != null)
-                                        {
-                                            A = await this.UserNeedsAuth.Invoke(Fa.Model, this);
-                                        }
-                                        if((Target.MustBeAuthorized && A != null) || !Target.MustBeAuthorized)
+                                        IUser? A = await (this.UserNeedsAuth?.Invoke(Fa.Model, this) ?? Task.FromResult<IUser?>(null));
+                                        if ((Target.MustBeAuthorized && A != null) || !Target.MustBeAuthorized)
                                         {
                                             object? SendBack = await Target.HandleRequest(Fa.Model, this, A);
-                                            if(SendBack != null && Target.CallbackAlias != null)
+                                            if (SendBack != null && Target.CallbackAlias != null)
                                             {
                                                 await this.SendRequestAsync(new(Target.CallbackAlias, SendBack, this.Token));
                                             }
                                         }
                                     }
-                                    else if(Target != null && !Target.Limiter.Passes(this.Sock.RemoteEndPoint))
+                                    else if (Target != null && !Target.Limiter.Passes(this.Sock.RemoteEndPoint))
                                     {
                                         this.RateLimited?.Invoke(Fa.Model, Target, this);
                                     }
@@ -149,7 +140,7 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
         public async Task SendRequestAsync(HandlerRequestModel Model)
         {
             NetworkStream? NetStr = await this.EnsureConnectionAsync();
-            if(NetStr != null)
+            if (NetStr != null)
             {
                 Frame Fr = new(Model);
                 byte[] FrameBytes = Frame.ToBytes(Fr);
@@ -160,7 +151,7 @@ namespace izolabella.WebSocket.Unity.Shared.RequestHelpers
         public bool LinkCallbackByType<T>(Action<object> E) where T : RequestHandler
         {
             RequestHandler? H = this.Handlers.FirstOrDefault(H => H.GetType() == typeof(T));
-            if(H != null)
+            if (H != null)
             {
                 H.OnCustomCallback += (A) => E.Invoke(A);
                 return true;

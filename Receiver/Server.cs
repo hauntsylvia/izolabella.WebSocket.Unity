@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using izolabella.WebSocket.Unity.Shared;
 using izolabella.WebSocket.Unity.Shared.RequestHelpers;
-using izolabella.WebSocket.Unity.Shared.Requisites;
 using izolabella.WebSocket.Unity.Shared.UserAuth;
 
 #nullable enable
@@ -17,7 +15,7 @@ namespace izolabella.WebSocket.Unity.Receiver
         {
             this.AcceptedListenerRequests = new();
             this.Listener = new(System.Net.IPAddress.Any, Port);
-            if(!OverrideReceiverLookup)
+            if (!OverrideReceiverLookup)
             {
                 this.RequestHandlers = BaseImpUtil.GetItems<RequestHandler>();
             }
@@ -50,7 +48,7 @@ namespace izolabella.WebSocket.Unity.Receiver
         private async Task<IUser?> AttemptToAuthUser(HandlerRequestModel Model, Middle Instance)
         {
             IUser? U = await this.UserAuthModel.AuthUserAsync(Model);
-            if(U == null)
+            if (U == null)
             {
                 this.OnUserAuthFailure?.Invoke(Instance);
             }
@@ -62,7 +60,7 @@ namespace izolabella.WebSocket.Unity.Receiver
             this.Listener.Start();
             new Task(async () =>
             {
-                while(true)
+                while (true)
                 {
                     Socket ClientTask = await this.Listener.AcceptSocketAsync();
                     new Task(() => this.AcceptedListenerRequests.Add(this.ForgetAndFireAsync(ClientTask))).Start();
